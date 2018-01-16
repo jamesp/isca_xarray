@@ -3,6 +3,34 @@
 
 import numpy as np
 
+from ..constants import kappa
+
+def pot_temp(data, p0=None, temp_field='temp', kappa=kappa):
+    """Calculate potential temperature from an Isca DataSet.
+
+    theta = T (p0/p)**kappa
+    kappa = R/cp
+
+    Parameters
+    ----------
+    data : xarray.DataSet
+        Isca output data
+    p0 : float, optional
+        Reference pressure for potential temperature.  If None, use surface
+        pressure determined from max of data.phalf.
+    temp_field : str, optional
+        The name of the temperature field.  Default: 'temp'
+    kappa : float, optional
+        Value for exponent R/cp.  Default: dry air, 2/7.
+
+    Returns a DataArray `pot_temp`."""
+    if p0 is None:
+        p0 = data.phalf.max()
+    t = data[temp_field]
+    p = data.pfull
+    theta =  t * (p0 / p) ** kappa
+    theta.name = 'pot_temp'
+    return theta
 
 def sat_press(T, ps0=610.0, Lv=2.5e6, Rv=461.5, T0=273.16):
     """Calculates the saturation pressure based on constant Lv.

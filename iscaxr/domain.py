@@ -69,6 +69,36 @@ def make_surf_integrator(domain, radius=1.0):
 def calculate_dp(domain):
     return xr.DataArray(domain.phalf.diff('phalf').values*100, coords=[('pfull', domain.pfull)])
 
+def pfull_to_phalf(field, domain):
+    """Move a field from pfull levels to
+    phalf levels (except top and bottom) using the arithmetic mean."""
+    # calculate the arithmetic mean between pairs of values along the pfull dim
+    avg = field.rolling(pfull=2).mean().dropna('pfull')
+    avg = _map_pfull_inside_phalf(avg, domain)
+    return avg
+
+def diff_pfull(field, domain):
+    """Calculate the vertical derivative of a pfull field and map onto phalf levels"""
+    dfield = field.diff('pfull')
+    dfield.name = 'd{}'.format(field.name)
+    dfield = _map_pfull_inside_phalf(dfield, domain)
+    return dfield
+
+def dfdp(field, domain):
+    """Calculate d(field)/dpfull.
+
+    Returns a new dfield on phalf levels."""
+    dp = diff_pfull(domain.pfull*100, domain)
+    df = diff_pfull(field, domain)
+    return df/dp
+
+def _map_pfull_inside_phalf(field, domain):
+    # xarray thinks field is on the pfull coords, but values are at phalf now.
+    # rename pfull -> phalf and replace the coord values with the domain phalf values.
+    field = field.rename({'pfull': 'phalf'})
+    field.phalf.values = domain.phalf[1:-1]
+    return field
+
 
 def resample_latlon(field, nlat=None, nlon=None, lats=None, lons=None, method='interpolate'):
     if nlat is None:
