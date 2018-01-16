@@ -8,3 +8,6 @@ kappa = 2./7  # R_dry/Cp_dry
 
 Rad_earth = 6317.0e3  # m
 grav = 9.8 # m/s^2
+
+omega = 7.292e-5  # /s
+

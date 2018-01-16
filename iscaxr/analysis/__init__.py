@@ -1,3 +1,3 @@
 from .mass_streamfunction import mass_streamfunction
 from .thermodynamics import pot_temp
-from .atmosphere import brunt_vaisala
+from .atmosphere import brunt_vaisala, eady_growth_rate

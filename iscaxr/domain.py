@@ -2,8 +2,10 @@ import numpy as np
 import scipy.signal
 import scipy.interpolate
 import xarray as xr
+import xarray.ufuncs as xruf
 
 from iscaxr.util import rng
+from iscaxr.constants import R_dry, grav
 
 def calculate_dlatlon(domain):
     """Calculate the grid size, in radians, for a dataset.
@@ -39,6 +41,17 @@ def calculate_dA(domain):
 
     dA = dlat*dlon*coslat
     return dA
+
+def calculate_dz(domain):
+    """Use the hydrostatic relation to get dz from dp."""
+    # hydrostatic: dp = -rho g dz
+    # ideal gas: rho = p / RT
+    # => dz = -RT/g d[lnp]
+    T = pfull_to_phalf(domain.temp, domain)
+    pfull = (domain.pfull/domain.phalf.max())*domain.ps
+    dlnp = diff_pfull(xruf.log(pfull), domain)
+    dz = -R_dry*T/grav*dlnp
+    return dz
 
 def make_surf_integrator(domain, radius=1.0):
     """Generate a surface integrator.
@@ -91,6 +104,8 @@ def dfdp(field, domain):
     dp = diff_pfull(domain.pfull*100, domain)
     df = diff_pfull(field, domain)
     return df/dp
+
+
 
 def _map_pfull_inside_phalf(field, domain):
     # xarray thinks field is on the pfull coords, but values are at phalf now.
