@@ -50,3 +50,7 @@ def eady_growth_rate(data):
 
     egr = 0.31*du/dz*f/N
     return np.abs(egr)
+
+
+def eddy(field, dim='time'):
+    return field - field.mean(dim)

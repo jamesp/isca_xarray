@@ -1,6 +1,25 @@
+# -*- coding:utf-8 -*-
+
 import numpy as np
 import xarray as xr
 
+
+def window_taper(field, n=30, dim='time'):
+    """Taper the ends of a field.  Useful for making non-periodic signals
+    e.g. a partial time-series, and making them periodic for frequency analysis.
+    Best to use eddy fields for this, i.e. remove mean value first.
+
+    Parameters
+    ----------
+        dim : the dimension to taper along
+        n : the size of taper at each end
+
+    Returns the field, tapered to zero at each end of the given dimension.
+    """
+    taper = field[dim]*0 + 1
+    taper[:n] = (np.cos(np.linspace(-np.pi/2, 0, n))**2)
+    taper[-n:] = (np.cos(np.linspace(0, np.pi/2, n))**2)
+    return field*taper
 
 def zonal_dispersion(field, dt=1):
     """Calculate the power spectra in time and longitude for an Isca dataset.
@@ -24,8 +43,11 @@ def zonal_dispersion(field, dt=1):
     ft = ft[::-1]
     ft = np.fft.fftshift(ft)
 
-    om = np.fft.fftshift(np.fft.fftfreq(len(e.time), d=dt))
-    k = np.fft.fftshift(np.fft.fftfreq(len(e.lon), d=1./len(e.lon)))
+    # convert to a power spectra
+    ft = np.abs(ft)
+
+    om = np.fft.fftshift(np.fft.fftfreq(len(field.time), d=dt))
+    k = np.fft.fftshift(np.fft.fftfreq(len(field.lon), d=1./len(field.lon)))
 
     coords = []
     for c in field.dims:
@@ -37,5 +59,9 @@ def zonal_dispersion(field, dt=1):
             coords.append((c, field[c].data))
 
     ftr = xr.DataArray(ft, coords=coords)
+
+    # keep only the positive frequency domain, the other have of the spectrum
+    # is identical as input was a real number signal
+    ftr = ftr.sel(freq=slice(0, None))
 
     return ftr

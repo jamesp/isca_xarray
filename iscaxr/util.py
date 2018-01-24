@@ -1,5 +1,18 @@
 import numpy as np
 
+def best_fit(xs, ys):
+    """Using the method of least squares, return the gradient
+    and y-intercept of the line of best fit through xs and ys."""
+    A = np.array([xs, np.ones(len(xs))])
+    return np.linalg.lstsq(A.T,ys)[0]
+
+def detrend(field, dim='time'):
+    """Remove a linear trend from an xarray DataArray along given dimension."""
+    mean_dims = [d for d in field.dims if d != dim]
+    mf = field.mean(mean_dims)
+    m, c = best_fit(field[dim], mf)
+    return field - (field.time*m + c)
+
 def absmax(x):
     """Returns the absolute maximum of x."""
     return np.max(np.abs(x))
