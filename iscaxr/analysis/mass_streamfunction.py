@@ -25,7 +25,8 @@ def mass_streamfunction(data, v_field='vcomp', a=Rad_earth, g=grav):
     streamfunction : xarray.DataArray
         The meridional mass streamfunction.
     """
-    vbar = data[v_field].mean('lon')
+    if 'lon' in data[v_field].dims:
+        vbar = data[v_field].mean('lon')
     c = 2*np.pi*a*np.cos(vbar.lat*np.pi/180) / g
     # take a diff of half levels, and assign to pfull coordinates
     dp = xr.DataArray(data.phalf.diff('phalf').values*100, coords=[('pfull', data.pfull)])
