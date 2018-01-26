@@ -1,15 +1,18 @@
 import os
 import warnings
 import subprocess
+from collections import namedtuple
 
 import numpy as np
 import matplotlib.pyplot as plt
-from xarray.plot.utils import _load_default_cmap
+import cartopy.crs as ccrs
 
 from iscaxr.util import nearest_val, absmax
 
-seq_cmap = _load_default_cmap()
-div_cmap = plt.cm.RdBu_r
+from iscaxr import cmap
+
+
+
 
 
 def make_video(filepattern, output, framerate=5):
@@ -44,3 +47,45 @@ def save_figure(fig, filename, overwrite=False):
         warnings.warn("File %r already exists. Not overwriting" % filename)
     else:
         fig.savefig(filename, bbox_inches='tight')
+
+
+def plot_lat_press(field, domain, cmap='RdBu_r', ax=None, center0=True):
+    """Plot a 2D meshgrid of data defined on pfull-lat levels."""
+    if ax is None:
+        fig, ax = plt.subplots()
+    pp = ax.pcolormesh(domain.latb, domain.phalf, field.transpose('pfull', 'lat'), cmap=cmap)
+    if center0:
+        absmax = np.max(np.abs(field))
+        pp.set_clim(-absmax, absmax)
+    cbar = plt.colorbar(pp)
+    ax.set_ylim(domain.phalf.max(), domain.phalf.min())
+    ax.set_xlim(-90, 90)
+    ax.set_xlabel('Latitude ($\\degree$)')
+    ax.set_xticks([-90, -45, 0, 45, 90], ['90$\\degree$ S', '45$\\degree$ S', '0$\\degree$', '45$\\degree$ N', '90$\\degree$ N'])
+    ax.set_ylabel('Pressure (hPa)')
+    return pp, cbar
+
+def plot_lat_lon(field, domain, cmap=plt.cm.RdBu_r, ax=None, center0=True, add_colorbar=True):
+    if ax is None:
+        fig, ax = plt.subplots()
+    pp = ax.pcolormesh(domain.lonb, domain.latb, field.transpose('lat', 'lon'), cmap=cmap)
+    if center0:
+        absmax = np.max(np.abs(field))
+        pp.set_clim(-absmax, absmax)
+    if add_colorbar:
+        cbar = plt.colorbar(pp)
+    else:
+        cbar = None
+    ax.set_ylim(domain.phalf.max(), domain.phalf.min())
+    ax.set_ylim(-90, 90)
+
+    ax.set_ylabel('Latitude ($\\degree$)')
+    ax.set_yticks([-90, -45, 0, 45, 90], ['90$\\degree$ S', '45$\\degree$ S', '0$\\degree$', '45$\\degree$ N', '90$\\degree$ N'])
+
+    ax.set_xlabel('Longitude ($\\degree$)')
+    l_ticks = [0, 45, 90, 135, 180, 225, 270, 315]
+    ax.set_xlim(domain.lonb.min(), domain.lonb.max())
+    ax.set_xticks(l_ticks, ['%d$\\degree$ E'%l for l in l_ticks])
+    return pp, cbar
+
+
