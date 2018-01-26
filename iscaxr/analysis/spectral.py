@@ -21,6 +21,59 @@ def window_taper(field, n=30, dim='time'):
     taper[-n:] = (np.cos(np.linspace(0, np.pi/2, n))**2)
     return field*taper
 
+def fft(field, dim=None, axis=None, scaledim=None):
+    """Calculate the FFT of a field along given dimensions.
+
+    Parameters
+    ----------
+
+    dim : str or sequence of str, optional
+        Dimension(s) over which to apply the transform.
+    axis : int or sequence of int, optional
+        Axis(es) over which to apply the transform. Only one of the 'dim'
+        and 'axis' arguments can be supplied. If neither are supplied, then
+        the transform is calculated over axes.
+    scaledim : str or sequence of str, optional
+        Dimensions for which the transformed coordinates should be scaled
+        according to the input coordinates.  If not specified, transformed
+        coordinates are given by whole wavenumbers over the given coordinate span.
+
+    Returns
+    -------
+
+    transformed : xarray.DataArray
+        The (complex) Fourier Transformed data.  Coordinate dimensions that have been transormed
+        are named 'F_`dim`', other dimensions retain their original names.
+        The transformed data array has the same shape as the original DataArray.
+    """
+    if dim is not None and axis is not None:
+        raise ValueError("cannot supply both 'axis' and 'dim' arguments")
+
+    if dim is not None:
+        axis = np.atleast_1d(field.get_axis_num(dim))
+
+    if scaledim is None:
+        scaleaxis = []
+    else:
+        scaleaxis = np.atleast_1d(field.get_axis_num(scaledim))
+
+    data = np.fft.fftn(field.values, axes=axis)
+    data = np.fft.fftshift(data, axes=axis)
+    transformed_axes = (range(field.ndim) if axis is None else axis % field.ndim)
+    coords = []
+    for ax, dim in enumerate(field.dims):
+        if ax in transformed_axes:
+            if ax in scaleaxis:
+                dx = field[dim].diff(dim).values[0]
+            else:
+                dx = 1./len(field[dim])
+            tcoord = np.fft.fftshift(np.fft.fftfreq(len(field[dim]), dx))
+            coords.append(('F_{}'.format(dim), tcoord))
+        else:
+            coords.append((dim, field[dim].values))
+    return xr.DataArray(data=data, coords=coords)
+
+
 def zonal_dispersion(field, dt=1):
     """Calculate the power spectra in time and longitude for an Isca dataset.
 

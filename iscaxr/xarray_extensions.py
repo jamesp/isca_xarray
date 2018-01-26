@@ -4,6 +4,7 @@ import xarray as xr
 import astropy.units
 
 from iscaxr.util import normalize
+from iscaxr.analysis.spectral import fft
 
 @xr.register_dataarray_accessor('in_units')
 class UnitConverter(object):
@@ -38,8 +39,11 @@ class UnitConverter(object):
         new_unit = astropy.units.Unit(new_unit)
         factor = self._unit.to(new_unit)
         newval = self._obj*factor
+        newval.attrs = self.attrs.copy()
         newval.attrs['units'] = new_unit.name
         return newval
+
+
 
 
 # @xr.register_dataset_accessor('convert_units')
@@ -52,6 +56,13 @@ class UnitConverter(object):
 
 
 
+@xr.register_dataarray_accessor('fft')
+class FourierTransformArray(object):
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+
+    def __call__(self, dim=None, axis=None, scaledim=None):
+        return fft(self._obj, dim, axis, scaledim)
 
 
 @xr.register_dataarray_accessor('normalize')
