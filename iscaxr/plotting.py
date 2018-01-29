@@ -6,6 +6,7 @@ from collections import namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
+import cartopy
 
 from iscaxr.util import nearest_val, absmax
 
@@ -65,17 +66,21 @@ def plot_lat_press(field, domain, cmap='RdBu_r', ax=None, center0=True):
     ax.set_ylabel('Pressure (hPa)')
     return pp, cbar
 
-def plot_lat_lon(field, domain, cmap=plt.cm.RdBu_r, ax=None, center0=True, add_colorbar=True):
+def plot_lat_lon(field, domain, ax=None, center0=True, overscale=1., **kwargs):
     if ax is None:
         fig, ax = plt.subplots()
-    pp = ax.pcolormesh(domain.lonb, domain.latb, field.transpose('lat', 'lon'), cmap=cmap)
-    if center0:
-        absmax = np.max(np.abs(field))
-        pp.set_clim(-absmax, absmax)
-    if add_colorbar:
-        cbar = plt.colorbar(pp)
+    if isinstance(ax, cartopy.mpl.geoaxes.GeoAxes):
+        transform = ccrs.PlateCarree()
     else:
-        cbar = None
+        transform = ax.transData
+    pp = ax.pcolormesh(domain.lonb, domain.latb, field.transpose('lat', 'lon'), transform=transform, **kwargs)
+    if center0:
+        absmax = np.max(np.abs(field))*overscale
+        pp.set_clim(-absmax, absmax)
+
+    return pp
+
+def render_lat_lon_labels(ax):
     ax.set_ylim(domain.phalf.max(), domain.phalf.min())
     ax.set_ylim(-90, 90)
 
@@ -86,6 +91,4 @@ def plot_lat_lon(field, domain, cmap=plt.cm.RdBu_r, ax=None, center0=True, add_c
     l_ticks = [0, 45, 90, 135, 180, 225, 270, 315]
     ax.set_xlim(domain.lonb.min(), domain.lonb.max())
     ax.set_xticks(l_ticks, ['%d$\\degree$ E'%l for l in l_ticks])
-    return pp, cbar
-
 
