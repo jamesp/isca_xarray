@@ -6,7 +6,7 @@ from collections import namedtuple
 import numpy as np
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-import cartopy
+from cartopy.mpl.geoaxes import GeoAxes
 
 from iscaxr.util import nearest_val, absmax
 
@@ -69,7 +69,7 @@ def plot_lat_press(field, domain, cmap='RdBu_r', ax=None, center0=True):
 def plot_lat_lon(field, domain, ax=None, center0=True, overscale=1., **kwargs):
     if ax is None:
         fig, ax = plt.subplots()
-    if isinstance(ax, cartopy.mpl.geoaxes.GeoAxes):
+    if isinstance(ax, GeoAxes):
         transform = ccrs.PlateCarree()
     else:
         transform = ax.transData
@@ -80,8 +80,8 @@ def plot_lat_lon(field, domain, ax=None, center0=True, overscale=1., **kwargs):
 
     return pp
 
-def render_lat_lon_labels(ax):
-    ax.set_ylim(domain.phalf.max(), domain.phalf.min())
+def render_lat_lon_labels(ax, domain):
+    ax.set_ylim(domain.latb.max(), domain.latb.min())
     ax.set_ylim(-90, 90)
 
     ax.set_ylabel('Latitude ($\\degree$)')
@@ -91,4 +91,3 @@ def render_lat_lon_labels(ax):
     l_ticks = [0, 45, 90, 135, 180, 225, 270, 315]
     ax.set_xlim(domain.lonb.min(), domain.lonb.max())
     ax.set_xticks(l_ticks, ['%d$\\degree$ E'%l for l in l_ticks])
-
