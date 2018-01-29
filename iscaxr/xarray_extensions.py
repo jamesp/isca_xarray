@@ -71,5 +71,5 @@ class NormalizeDataArray(object):
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
 
-    def __call__(self, dims):
+    def __call__(self, dims=None):
         return normalize(self._obj, dims)

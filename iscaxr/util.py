@@ -38,10 +38,8 @@ def get_pressure(phi):
         p = phi.phalf
     return p
 
-def normalize(field, dims):
+def normalize(field, dims=None):
     """Normalise a field over the range [0, 1] along given dimensions."""
-    if type(dims) == str:
-        dims = (dims, )
     dmax = field.max(dims)
     dmin = field.min(dims)
     return (field - dmin) / (dmax - dmin)
