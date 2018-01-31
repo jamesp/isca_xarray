@@ -39,7 +39,7 @@ class UnitConverter(object):
         new_unit = astropy.units.Unit(new_unit)
         factor = self._unit.to(new_unit)
         newval = self._obj*factor
-        newval.attrs = self.attrs.copy()
+        newval.attrs = self._obj.attrs.copy()
         newval.attrs['units'] = new_unit.name
         return newval
 
