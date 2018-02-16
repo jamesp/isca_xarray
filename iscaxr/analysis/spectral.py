@@ -63,6 +63,7 @@ def fft(field, dim=None, axis=None, scaledim=None):
     coords = []
     for ax, dim in enumerate(field.dims):
         if ax in transformed_axes:
+            # assume a regular sample spacing, regardless of scaling
             if ax in scaleaxis:
                 dx = field[dim].diff(dim).values[0]
             else:
@@ -116,5 +117,21 @@ def zonal_dispersion(field, dt=1):
     # keep only the positive frequency domain, the other have of the spectrum
     # is identical as input was a real number signal
     ftr = ftr.sel(freq=slice(0, None))
-
     return ftr
+
+def equatorial_waves(field, lat_cutoff=8, symmetric=True):
+    """Calculate zonal equatorial wavenumbers.
+
+    Either symmetric or antisymmetric waves.
+
+    Returns the wave spectra in the zonal direction."""
+    nh = field.sel(lat=slice(0, lat_cutoff))
+    sh = field.sel(lat=slice(-lat_cutoff, 0))
+    sh.lat.values = -sh.lat.values
+
+    if symmetric:
+        sym_field = 0.5*(nh + sh)
+    else:
+        sym_field = 0.5*(nh - sh)
+
+    return sym_field.load().pipe(fft, dim='lon').pipe(np.abs).mean('lat')
