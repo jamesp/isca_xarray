@@ -134,4 +134,4 @@ def equatorial_waves(field, lat_cutoff=8, symmetric=True):
     else:
         sym_field = 0.5*(nh - sh)
 
-    return sym_field.load().pipe(fft, dim='lon').pipe(np.abs).mean('lat')
+    return sym_field.pipe(fft, dim='lon').pipe(np.abs).mean('lat')

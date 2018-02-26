@@ -17,8 +17,10 @@ def test_assymmetric_eq_waves():
     assert np.allclose(spec, 0)
 
     spec = equatorial_waves(signal, symmetric=False)
-    assert np.allclose(spec.where(np.abs(spec.F_lon) != wav).dropna('F_lon'), 0)
-    assert np.all(spec.where(np.abs(spec.F_lon) == wav).dropna('F_lon') > 1)
+    values = spec.where(np.abs(spec.F_lon) != wav).dropna('F_lon').values
+    assert np.allclose(values, 0)
+    values = spec.where(np.abs(spec.F_lon) == wav).dropna('F_lon').values
+    assert np.all(values > 1)
     return spec
 
 def test_symmetric_eq_waves():

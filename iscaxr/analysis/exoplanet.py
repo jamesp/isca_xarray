@@ -3,11 +3,11 @@ from functools import partial
 import numpy as np
 import xarray as xr
 
-import gran.domain
-from gran.util import grid_var
-from gran.constants.earth import R0 as R_EARTH
+import iscaxr.domain
+from iscaxr.util import grid_var
+from iscaxr.constants import Rad_earth
 
-def sublon(time, omega, alpha, a=R_EARTH):
+def sublon(time, omega, alpha, a=Rad_earth):
     """Calculate substellar point, given rotation rate (omega) and speed of
     the substellar point over the surface of the planet."""
     gamma = float(alpha)/a + omega
@@ -16,7 +16,7 @@ def sublon(time, omega, alpha, a=R_EARTH):
     return sublon
 
 
-def g_sublon(dataset, omega, alpha, a=R_EARTH):
+def g_sublon(dataset, omega, alpha, a=Rad_earth):
     """Generate a sublon(t) function that returns the substellar longitude
     at given time t, for a set of experimental parameters."""
     lon = dataset.lon.copy()
@@ -38,17 +38,17 @@ def piper(*fns):
 
 def centre_zero(field):
     if 'lon' in field.dims:
-        return gran.domain.center_lon(field, lon=0, wrap=True)
+        return iscaxr.domain.center_lon(field, lon=0, wrap=True)
     else:
-        return gran.domain.center_lon(field, lon0=0, wrap=True)
+        return iscaxr.domain.center_lon(field, lon0=0, wrap=True)
 
 surface = lambda f: f.sel(pfull=f.pfull.max())
 
 def norm(field):
     if 'lon' in field.dims:
-        return gran.util.normalize(field, dims='lon')
+        return iscaxr.util.normalize(field, dims='lon')
     else:
-        return gran.util.normalize(field, dims='lon0')
+        return iscaxr.util.normalize(field, dims='lon0')
 
 def lon_to_xi(field, lon0, wrap=True):
     """Move a DataArray from a fixed (lat, lon) frame of reference
@@ -57,9 +57,9 @@ def lon_to_xi(field, lon0, wrap=True):
         return xr.concat([lon_to_xi(field.sel(time=t), lon0, wrap=wrap) for t in field.time], dim=field.time)
     else:                 # single snapshot in time
         lon0 = lon0(field.time) if callable(lon0) else lon0
-        return  field.pipe(gran.domain.center_lon, lon=lon0, wrap=wrap)#.rename({'lon': 'xi'})
+        return  field.pipe(iscaxr.domain.center_lon, lon=lon0, wrap=wrap)#.rename({'lon': 'xi'})
 
-def make_phase_curve_calculator(domain, radius=R_EARTH):
+def make_phase_curve_calculator(domain, radius=Rad_earth):
     rad  = np.pi / 180
     radlon = domain.lon * rad
     lon0 = radlon.copy(deep=True)
@@ -70,7 +70,7 @@ def make_phase_curve_calculator(domain, radius=R_EARTH):
     plon.values[plon.values < 0] = 0     # adjust for max(cos(lon - lon0), 0.0)
 
     coslat = np.cos(domain.lat * rad)
-    dA = gran.domain.calculate_dA(domain)
+    dA = iscaxr.domain.calculate_dA(domain)
     def phase_curve(field):
         pc = (field*dA*coslat*plon).sum(('lat', 'lon'))
         return pc

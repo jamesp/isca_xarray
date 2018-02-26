@@ -182,6 +182,6 @@ def center_lon(field, wrap=False, nearest=False, **kwargs):
         if wrap:
             newlon[newlon > 180] = (newlon - 360)[newlon > 180]
         q[dim] = newlon
-        ilon = q[dim].argsort()
-        q = q.isel(**{dim: ilon})
+        #q = q.reindex(**{dim: sorted(q[dim])})
+        q = q.isel(**{dim: q[dim].argsort().values})
     return q

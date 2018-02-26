@@ -7,8 +7,10 @@ Cp_dry = 1003.0
 Cv_dry = Cp_dry - R_dry
 kappa = 2./7  # R_dry/Cp_dry
 
-Rad_earth = 6317.0e3  # m
+Rad_earth = 6376e3  # m
 grav = 9.8 # m/s^2
 
 omega = 7.292e-5  # /s
 day = 86400 # s
+
+SB = 5.67e-8 # W.m^-2.K^-4  -- Stephan Boltzmann constant
