@@ -2,7 +2,7 @@
 
 import numpy as np
 import xarray as xr
-
+import spharm
 
 def window_taper(field, n=30, dim='time'):
     """Taper the ends of a field.  Useful for making non-periodic signals
@@ -135,3 +135,66 @@ def equatorial_waves(field, lat_cutoff=8, symmetric=True):
         sym_field = 0.5*(nh - sh)
 
     return sym_field.pipe(fft, dim='lon').pipe(np.abs).mean('lat')
+def spht(field, ntrunc=None, gridtype='gaussian'):
+    """Transform a field on lat-lon grid to spherical harmonics.
+
+    Currently only works for:
+        - fields defined on the lat-lon points, not latb-lonb.
+        - triangular truncation.
+
+    Returns an xarray.DataArray
+    """
+    nlat, nlon = len(field.lat), len(field.lon)
+    grid = spharm.Spharmt(nlon, nlat, gridtype=gridtype)
+    if ntrunc is None:
+        ntrunc = nlat-1
+
+    other_dims = [d for d in field.dims if d not in ('lat', 'lon')]
+
+    # need the field in N-S, E-W form, (lat, lon, other coords)
+    vfield = (field
+              .sel(lat=sorted(cbbt.lat, reverse=True), lon=sorted(cbbt.lon))
+              .transpose('lat', 'lon', *other_dims)
+             )
+
+    # calculate the spectral coefficients, given the truncation level
+    coeffs = grid.grdtospec(vfield.values, ntrunc)
+
+    m, n = spharm.getspecindx(ntrunc)
+
+    # put the coefficients into a grid, half of which will be empty
+    # due to the triangular trunctation
+    cc = np.zeros((ntrunc+1, ntrunc+1, *coeffs.shape[1:]), dtype=np.complex128)
+    cc[m, n] = coeffs
+    coords = [('m', np.arange(0,ntrunc+1)), ('n', np.arange(0, ntrunc+1))]
+    for d in other_dims:
+        coords.append((d, field.coords[d]))
+    return xr.DataArray(data=cc, coords=coords, name=field.name)
+
+def sph_filter(field, l_cut, gridtype='gaussian'):
+    """Remove all waves above a specific spherical wavenumber l_cut"""
+    nlat, nlon = len(field.lat), len(field.lon)
+    grid = spharm.Spharmt(nlon, nlat, gridtype=gridtype)
+    other_dims = [d for d in field.dims if d not in ('lat', 'lon')]
+
+    # need the field in N-S, E-W form, (lat, lon, other coords)
+    vfield = (field
+              .sel(lat=sorted(cbbt.lat, reverse=True), lon=sorted(cbbt.lon))
+              .transpose('lat', 'lon', *other_dims)
+             )
+
+    ntrunc = nlat-1
+    m, n = spharm.getspecindx(ntrunc)
+    l = m + n
+
+    # transform to spherical modes, eliminate high wavenumbers and transform back
+    coeffs = grid.grdtospec(vfield.values, ntrunc)
+    mask = l > l_cut
+    coeffs[mask] = 0
+
+    values = grid.spectogrd(coeffs)
+
+    # copy the original field and comply to the same coordinate ordering
+    nfield = vfield.copy()
+    nfield.values = values
+    return nfield.transpose(*field.dims)
