@@ -1,4 +1,5 @@
 import os
+import shutil
 import warnings
 import subprocess
 from collections import namedtuple
@@ -9,7 +10,6 @@ import cartopy.crs as ccrs
 from cartopy.mpl.geoaxes import GeoAxes
 
 from iscaxr.util import nearest_val, absmax
-
 from iscaxr import cmap
 
 
@@ -17,9 +17,26 @@ from iscaxr import cmap
 
 
 def make_video(filepattern, output, framerate=5):
-    command = 'ffmpeg -framerate {framerate:d} -y -i {filepattern!s} -c:v libx264 -r 6 -pix_fmt yuv420p -vf scale=3200:-2 {output!s}'
+    command = 'ffmpeg -start_number 0 -framerate {framerate:d} -y -i {filepattern!s} -c:v libx264 -pix_fmt yuv420p -vf scale=3200:-2 {output!s}'
     command = command.format(filepattern=filepattern, framerate=framerate, output=output)
     subprocess.call([command], shell=True)
+
+def make_timeseries_video(field, frame_fn, outname, framerate=5, tempdir='_frames', cleanup=True, tqdm=None):
+    if tqdm is None:
+        tqdm = lambda x: x
+    try:
+        os.mkdir(tempdir)
+    except:
+        pass
+
+    for i, t in enumerate(tqdm(field.time)):
+        fig = frame_fn(field.sel(time=t))
+        fig.savefig(os.path.join(tempdir, 'frame%05d.png' % (i+1)))
+        plt.close(fig)
+    make_video(os.path.join(tempdir, 'frame%05d.png'), outname, framerate)
+
+    if cleanup:
+        shutil.rmtree(tempdir)
 
 def neutral_levels(array, nlevels=13, zero_fac=0.05, max_fac=0.95):
     """Create a set of colour levels with a white region +/-zero_fac*100% either side of zero.

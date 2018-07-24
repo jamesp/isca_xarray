@@ -3,3 +3,4 @@
 _*.so
 ._*
 .cache/
+.ipynb_checkpoints

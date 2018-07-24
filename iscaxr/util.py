@@ -1,4 +1,5 @@
 import numpy as np
+import xarray as xr
 
 def best_fit(xs, ys):
     """Using the method of least squares, return the gradient

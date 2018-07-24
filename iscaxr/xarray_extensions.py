@@ -73,3 +73,12 @@ class NormalizeDataArray(object):
 
     def __call__(self, dims=None):
         return normalize(self._obj, dims)
+    
+
+@xr.register_dataarray_accessor('coordmax')
+class CoordinateMaximumArray(object):
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+
+    def __call__(self, dims=None):
+        return self._obj.where(self._obj == self._obj.max(dims), drop=True).squeeze()

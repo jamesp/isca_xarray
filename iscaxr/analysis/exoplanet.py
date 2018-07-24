@@ -75,3 +75,21 @@ def make_phase_curve_calculator(domain, radius=Rad_earth):
         pc = (field*dA*coslat*plon).sum(('lat', 'lon'))
         return pc
     return phase_curve
+
+def make_phase_curve_calculator_mean(domain, radius=Rad_earth):
+    rad  = np.pi / 180
+    radlon = domain.lon * rad
+    lon0 = radlon.copy(deep=True)
+    lon0.name = 'lon0'
+    lon0 = lon0.rename({'lon': 'lon0'})
+
+    plon = np.cos(radlon - lon0)
+    plon.values[plon.values < 0] = 0     # adjust for max(cos(lon - lon0), 0.0)
+
+    coslat = np.cos(domain.lat * rad)
+    def phase_curve(field):
+        surf_int = iscaxr.domain.make_surf_integrator(d, radius=radius)
+        surf_mean = lambda d: surf_int(d) / surf_int(1)
+        pc = surf_mean(field*plon)
+        return pc.rename({'lon0': 'lon'})
+    return phase_curve

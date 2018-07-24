@@ -164,7 +164,7 @@ def spht(field, ntrunc=None, gridtype='gaussian'):
 
     # put the coefficients into a grid, half of which will be empty
     # due to the triangular trunctation
-    cc = np.zeros((ntrunc+1, ntrunc+1, *coeffs.shape[1:]), dtype=np.complex128)
+    cc = np.zeros((ntrunc+1, ntrunc+1)+tuple(coeffs.shape[1:]), dtype=np.complex128)
     cc[m, n] = coeffs
     coords = [('m', np.arange(0,ntrunc+1)), ('n', np.arange(0, ntrunc+1))]
     for d in other_dims:
